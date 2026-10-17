@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>Global Bid Tax Model - Multi Country</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 12px;
+      font-weight: 600;
+      color: #f9fafb;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 4px;
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      margin-top: 24px;
+    }
+
+    h3 {
+      font-size: 1rem;
+      margin-top: 12px;
+    }
+
+    p {
+      margin: 0 0 8px;
+      color: #d1d5db;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      background: rgba(148, 163, 184, 0.15);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: #e5e7eb;
+      margin-bottom: 12px;
+      gap: 6px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .card {
+      background: rgba(15, 23, 42, 0.92);
+      border-radius: 16px;
+      padding: 16px 18px 18px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      box-shadow:
+        0 18px 45px rgba(15, 23, 42, 0.8),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+
+    .card-header small {
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 12px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field label {
+      font-size: 0.8rem;
+      color: #cbd5f5;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .field label span {
+      font-size: 0.7rem;
+      color: #9ca3af;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.4);
+      background: rgba(15, 23, 42, 1);
+    }
+
+    .field input::placeholder {
+      color: #6b7280;
+    }
+
+    .muted {
+      font-size: 0.78rem;
+      color: #9ca3af;
+    }
+
+    .btn-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 7px 16px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      background: linear-gradient(135deg, #2563eb, #0ea5e9);
+      color: #f9fafb;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
+      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 28px rgba(37, 99, 235, 0.5);
+      filter: brightness(1.03);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.5);
+      filter: brightness(0.98);
+    }
+
+    button.secondary {
+      background: transparent;
+      color: #e5e7eb;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      box-shadow: none;
+    }
+
+    button.secondary:hover {
+      background: rgba(15, 23, 42, 0.9);
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.8);
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 16px;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 640px) {
+      .results-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .metric {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 7px 10px;
+      border-radius: 10px;
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.22), transparent 55%);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+    }
+
+    .metric-label {
+      font-size: 0.8rem;
+      color: #cbd5f5;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .metric-main {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fbbf24;
+    }
+
+    .metric-sub {
+      font-size: 0.8rem;
+      color: #9ca3af;
+    }
+
+    .metric-small {
+      font-size: 0.78rem;
+      color: #d1d5db;
+    }
+
+    .formula-box {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px dashed rgba(148, 163, 184, 0.6);
+      font-size: 0.8rem;
+    }
+
+    .formula-box code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 6px;
+      padding: 2px 4px;
+      color: #e5e7eb;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: #e5e7eb;
+      gap: 4px;
+      margin-right: 4px;
+      margin-bottom: 4px;
+    }
+
+    .error {
+      color: #fecaca;
+      font-size: 0.8rem;
+      margin-top: 6px;
+    }
+
+    .tagline {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+
+    .divider {
+      margin-top: 18px;
+      margin-bottom: 12px;
+      border-top: 1px dashed rgba(148, 163, 184, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <span class="badge">
+      <span>Global Bid Tax Model · Multi Country / Structure</span>
+    </span>
+
+    <h1>입찰사업 세무 Cost-up 계산기 (다국가·다구조)</h1>
+    <p class="tagline">
+      Country / 구조 선택 → 세율 Preset 자동 반영 → Direct cost·Overhead·Profit·세금까지 한 번에 시뮬레이션합니다.
+      (실제 사용 시 각 국 최신 세법·조세조약·현지 자문 필수)
+    </p>
+
+    <div class="layout">
+      <!-- LEFT: INPUTS -->
+      <div class="card">
+        <div class="card-header">
+          <h2>① 입력값 (Inputs)</h2>
+          <small>시나리오를 선택하고, 필요 시 세율·원가를 수정하세요.</small>
+        </div>
+
+        <h3>0) 프로젝트 시나리오 선택</h3>
+        <div class="grid-3" style="margin-bottom: 10px;">
+          <div class="field">
+            <label>Country</label>
+            <select id="country">
+              <option value="Philippines" selected>Philippines</option>
+              <option value="Generic">Generic Country</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Structure</label>
+            <select id="structure">
+              <option value="NRFC" selected>NRFC (본사직접, Non-Resident)</option>
+              <option value="Branch">Branch (지점, PE)</option>
+              <option value="Subsidiary">Subsidiary (현지법인)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>통화 / Currency</label>
+            <select id="currency">
+              <option value="USD" selected>USD</option>
+              <option value="PHP">PHP</option>
+              <option value="EUR">EUR</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-3" style="margin-bottom: 10px;">
+          <div class="field">
+            <label>환율 (PHP / 1 USD) <span>선택사항</span></label>
+            <input id="fxRate" type="number" step="0.0001" value="56" />
+          </div>
+          <div class="field">
+            <label>표시 단위 <span>1 = 전체</span></label>
+            <select id="unit">
+              <option value="1" selected>1 (원 단위)</option>
+              <option value="1000">1,000 (천 단위)</option>
+              <option value="1000000">1,000,000 (백만 단위)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Preset 메모</label>
+            <input id="presetNote" type="text" readonly value="Philippines · NRFC 기본 세율" />
+          </div>
+        </div>
+
+        <h3>1) 원가 구조 (Cost Base)</h3>
+        <p class="muted">
+          금액은 선택된 통화(<span id="currencyLabel">USD</span>) 기준. % 값은 <strong>숫자만</strong> 입력(예: <b>80 → 80%</b>).
+        </p>
+        <div class="grid-2">
+          <div class="field">
+            <label>Direct Staff Cost</label>
+            <input id="directCost" type="number" step="0.01" value="1000000" />
+          </div>
+          <div class="field">
+            <label>Reimbursable Cost (여비 등)</label>
+            <input id="reimbCost" type="number" step="0.01" value="200000" />
+          </div>
+          <div class="field">
+            <label>Overhead %</label>
+            <input id="overheadPct" type="number" step="0.01" value="80" />
+          </div>
+          <div class="field">
+            <label>Contingency %</label>
+            <input id="contingencyPct" type="number" step="0.01" value="10" />
+          </div>
+          <div class="field">
+            <label>Profit % (on Cost Base)</label>
+            <input id="profitPct" type="number" step="0.01" value="15" />
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <h3>2) 세율 가정 (Tax Parameters)</h3>
+        <p class="muted">
+          Preset을 기준으로 불러오되, 필요시 직접 수정 가능합니다. % 값은 <strong>25 → 25%</strong>. 0/1은 1=컨설턴트 부담.
+        </p>
+        <div class="grid-2">
+          <div class="field">
+            <label>WHT Rate (%)<span>원천징수세율</span></label>
+            <input id="whtRate" type="number" step="0.01" value="25" />
+          </div>
+          <div class="field">
+            <label>WHT Portion (0~1)<span>적용 비율</span></label>
+            <input id="whtPortion" type="number" step="0.01" value="1" />
+          </div>
+          <div class="field">
+            <label>VAT Rate (%)</label>
+            <input id="vatRate" type="number" step="0.01" value="12" />
+          </div>
+          <div class="field">
+            <label>VAT Borne (0/1)<span>1=컨설턴트 부담</span></label>
+            <input id="vatBorne" type="number" step="1" min="0" max="1" value="1" />
+          </div>
+          <div class="field">
+            <label>Other Local Tax (%)<span>Local business tax 등</span></label>
+            <input id="otherTaxRate" type="number" step="0.01" value="2" />
+          </div>
+          <div class="field">
+            <label>Other Tax Borne (0/1)</label>
+            <input id="otherTaxBorne" type="number" step="1" min="0" max="1" value="1" />
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button id="calcBtn" type="button">
+            계산하기 / Recalculate
+          </button>
+          <button id="resetBtn" type="button" class="secondary">
+            샘플 Preset으로 초기화
+          </button>
+          <span id="errorMsg" class="error"></span>
+        </div>
+      </div>
+
+      <!-- RIGHT: RESULTS -->
+      <div class="card">
+        <div class="card-header">
+          <h2>② 결과 (Results)</h2>
+          <small id="scenarioLabel">Scenario: Philippines · NRFC</small>
+        </div>
+
+        <h3>1) 원가 & 필요 순매출 (Cost & Net Revenue)</h3>
+        <div class="results-grid">
+          <div class="metric">
+            <div class="metric-label">
+              <span>Cost Base (총 원가)</span>
+              <span id="costBaseUnits" class="metric-small"></span>
+            </div>
+            <div id="costBase" class="metric-main">–</div>
+            <div id="costBreakdown" class="metric-sub">
+              Direct + Reimb + Overhead + Contingency
+            </div>
+          </div>
+
+          <div class="metric">
+            <div class="metric-label">
+              <span>Net Revenue Required</span>
+              <span class="metric-small">Cost Base + Profit</span>
+            </div>
+            <div id="netRevenue" class="metric-main">–</div>
+            <div id="profitInfo" class="metric-sub">
+              Profit: –
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin-top: 12px;">2) 세금 & Bid Price (Gross-up)</h3>
+        <div class="results-grid">
+          <div class="metric">
+            <div class="metric-label">
+              <span>Contract Price / Bid Price</span>
+              <span id="totalTaxRateLabel" class="metric-small"></span>
+            </div>
+            <div id="contractPrice" class="metric-main">–</div>
+            <div class="metric-sub">
+              Net Revenue ÷ (1 − Total Tax Rate)
+            </div>
+          </div>
+
+          <div class="metric">
+            <div class="metric-label">
+              <span>Net to Consultant (세후 유입)</span>
+              <span id="netCheck" class="metric-small"></span>
+            </div>
+            <div id="netConsultant" class="metric-main">–</div>
+            <div id="opexMargin" class="metric-sub">
+              세후 Operating Margin: –
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top: 8px;">
+          <div class="metric">
+            <div class="metric-label">
+              <span>원천징수세 (WHT)</span>
+              <span id="whtEffLabel" class="metric-small"></span>
+            </div>
+            <div id="whtAmount" class="metric-main">–</div>
+            <div class="metric-sub">
+              Contract Price × WHT Effective Rate
+            </div>
+          </div>
+
+          <div class="metric">
+            <div class="metric-label">
+              <span>VAT + Local Tax</span>
+              <span id="vatOtherEffLabel" class="metric-small"></span>
+            </div>
+            <div id="vatOtherAmount" class="metric-main">–</div>
+            <div class="metric-sub">
+              VAT Amount + Other Local Tax
+            </div>
+          </div>
+        </div>
+
+        <div class="formula-box">
+          <strong>핵심 수식 (Key Formula)</strong>
+          <p style="margin-top: 4px;">
+            <span class="pill">① Cost Base = Direct + Reimb + Overhead + Contingency</span>
+            <span class="pill">② Net Revenue Required = Cost Base + Profit</span>
+            <span class="pill">③ Total Tax Rate = WHT<sub>eff</sub> + VAT<sub>eff</sub> + Local<sub>eff</sub></span>
+          </p>
+          <p style="margin-top: 4px;">
+            <code>Contract Price = Net Revenue Required ÷ (1 − Total Tax Rate)</code>
+          </p>
+          <p style="margin-top: 4px; line-height: 1.5;">
+            아래는 현재 입력값을 반영한 계산 과정 요약입니다:
+          </p>
+          <p id="formulaDetail" style="margin-top: 2px; color: #e5e7eb;"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 18px;">
+      <h2>③ 해석 가이드</h2>
+      <p class="muted">
+        • 이 도구는 NRFC(본사 직접용역) 기준으로 <strong>WHT·VAT·Local Tax를 Contract Price 기준 비율</strong>로 단순화했습니다.<br/>
+        • Branch/법인 구조에서의 <strong>법인세(CIT)</strong>는 별도 Detailed Model에서 다루되, 여기서는 대략적인
+          Effective Tax Rate를 감 잡는 용도로 사용하시길 권장합니다.<br/>
+        • Country/Structure Preset은 회사 내부의 <strong>TaxTable 시트</strong>와 일치시키면, 엑셀·웹 모델을 같은 논리로 운영할 수 있습니다.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // --- Preset 정의 (Country + Structure) ---
+    const TAX_PRESETS = {
+      "Philippines|NRFC": {
+        note: "Philippines · NRFC (25% WHT, 12% VAT, 2% Local, 모두 컨설턴트 부담)",
+        whtRate: 25,
+        whtPortion: 1,
+        vatRate: 12,
+        vatBorne: 1,
+        otherTaxRate: 2,
+        otherTaxBorne: 1
+      },
+      "Philippines|Branch": {
+        note: "Philippines · Branch (예시값: 2% WHT 예납, 12% VAT, 2% Local)",
+        whtRate: 2,
+        whtPortion: 1,
+        vatRate: 12,
+        vatBorne: 1,
+        otherTaxRate: 2,
+        otherTaxBorne: 1
+      },
+      "Generic|NRFC": {
+        note: "Generic NRFC (예: 10% WHT, 10% VAT, 2% Local)",
+        whtRate: 10,
+        whtPortion: 1,
+        vatRate: 10,
+        vatBorne: 1,
+        otherTaxRate: 2,
+        otherTaxBorne: 1
+      },
+      "Generic|Branch": {
+        note: "Generic Branch (예: 2% WHT 예납, 10% VAT, 2% Local)",
+        whtRate: 2,
+        whtPortion: 1,
+        vatRate: 10,
+        vatBorne: 1,
+        otherTaxRate: 2,
+        otherTaxBorne: 1
+      }
+    };
+
+    function formatNumber(value, currency, unitFactor) {
+      if (isNaN(value)) return "-";
+      const scaled = value / unitFactor;
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(scaled);
+    }
+
+    function formatPercent(value) {
+      if (isNaN(value)) return "-";
+      return (value * 100).toFixed(1) + "%";
+    }
+
+    function getNumber(id, defaultValue) {
+      const el = document.getElementById(id);
+      if (!el) return defaultValue;
+      const v = parseFloat(el.value);
+      if (isNaN(v)) return defaultValue;
+      return v;
+    }
+
+    function applyPresetFromSelection() {
+      const country = document.getElementById("country").value;
+      const structure = document.getElementById("structure").value;
+      const key = `${country}|${structure}`;
+      const preset = TAX_PRESETS[key];
+      const noteInput = document.getElementById("presetNote");
+      const scenarioLabelEl = document.getElementById("scenarioLabel");
+
+      const structureLabelMap = {
+        "NRFC": "NRFC",
+        "Branch": "Branch",
+        "Subsidiary": "Subsidiary"
+      };
+      const structureLabel = structureLabelMap[structure] || structure;
+
+      if (preset) {
+        document.getElementById("whtRate").value = preset.whtRate;
+        document.getElementById("whtPortion").value = preset.whtPortion;
+        document.getElementById("vatRate").value = preset.vatRate;
+        document.getElementById("vatBorne").value = preset.vatBorne;
+        document.getElementById("otherTaxRate").value = preset.otherTaxRate;
+        document.getElementById("otherTaxBorne").value = preset.otherTaxBorne;
+        if (noteInput) noteInput.value = preset.note;
+      } else {
+        if (noteInput) noteInput.value = "직접 세율을 입력하세요.";
+      }
+
+      if (scenarioLabelEl) {
+        scenarioLabelEl.textContent = `Scenario: ${country} · ${structureLabel}`;
+      }
+    }
+
+    function calculate() {
+      const currency = document.getElementById("currency").value || "USD";
+      const unitFactor = parseFloat(document.getElementById("unit").value) || 1;
+      document.getElementById("currencyLabel").innerText = currency;
+
+      const directCost = getNumber("directCost", 0);
+      const reimbCost = getNumber("reimbCost", 0);
+      const overheadPct = getNumber("overheadPct", 0) / 100;
+      const contingencyPct = getNumber("contingencyPct", 0) / 100;
+      const profitPct = getNumber("profitPct", 0) / 100;
+
+      const whtRate = getNumber("whtRate", 0) / 100;
+      const whtPortion = getNumber("whtPortion", 0);
+      const vatRate = getNumber("vatRate", 0) / 100;
+      const vatBorne = getNumber("vatBorne", 0);
+      const otherTaxRate = getNumber("otherTaxRate", 0) / 100;
+      const otherTaxBorne = getNumber("otherTaxBorne", 0);
+
+      const errorEl = document.getElementById("errorMsg");
+      errorEl.textContent = "";
+
+      // ---- COST BASE ----
+      const overheadAmount = directCost * overheadPct;
+      const subtotalBeforeCont = directCost + reimbCost + overheadAmount;
+      const contingencyAmount = subtotalBeforeCont * contingencyPct;
+      const costBase = subtotalBeforeCont + contingencyAmount;
+      const profitAmount = costBase * profitPct;
+      const netRevenueRequired = costBase + profitAmount;
+
+      // ---- TAX RATES ----
+      const whtEff = whtRate * whtPortion;
+      const vatEff = vatRate * vatBorne;
+      const otherEff = otherTaxRate * otherTaxBorne;
+      const totalTaxRate = whtEff + vatEff + otherEff;
+      const netFactor = 1 - totalTaxRate;
+
+      if (netFactor <= 0.01) {
+        errorEl.textContent =
+          "Total Tax Rate가 100%에 너무 가깝습니다. 세율/부담 주체 설정을 다시 확인해주세요.";
+      }
+
+      const contractPrice =
+        netFactor > 0 ? netRevenueRequired / netFactor : NaN;
+
+      const whtAmount = contractPrice * whtEff;
+      const vatAmount = contractPrice * vatEff;
+      const otherAmount = contractPrice * otherEff;
+      const netToConsultant =
+        contractPrice - (whtAmount + vatAmount + otherAmount);
+
+      const netDiff = netToConsultant - netRevenueRequired;
+      const actualOpexMargin =
+        contractPrice > 0 ? (netToConsultant - costBase) / contractPrice : NaN;
+
+      // ---- UPDATE DOM ----
+      document.getElementById("costBase").innerText = formatNumber(
+        costBase,
+        currency,
+        unitFactor
+      );
+      document.getElementById("costBaseUnits").innerText =
+        unitFactor === 1
+          ? "Full amount"
+          : "Shown in ×" + unitFactor.toLocaleString("en-US");
+
+      document.getElementById("netRevenue").innerText = formatNumber(
+        netRevenueRequired,
+        currency,
+        unitFactor
+      );
+      document.getElementById("profitInfo").innerText =
+        "Profit: " +
+        formatNumber(profitAmount, currency, unitFactor) +
+        " (" +
+        formatPercent(profitPct) +
+        " of Cost Base)";
+
+      document.getElementById("contractPrice").innerText = formatNumber(
+        contractPrice,
+        currency,
+        unitFactor
+      );
+      document.getElementById("netConsultant").innerText = formatNumber(
+        netToConsultant,
+        currency,
+        unitFactor
+      );
+      document.getElementById("whtAmount").innerText = formatNumber(
+        whtAmount,
+        currency,
+        unitFactor
+      );
+      document.getElementById("vatOtherAmount").innerText = formatNumber(
+        vatAmount + otherAmount,
+        currency,
+        unitFactor
+      );
+
+      document.getElementById("totalTaxRateLabel").innerText =
+        "Total Tax Rate: " + (totalTaxRate * 100).toFixed(1) + "%";
+      document.getElementById("whtEffLabel").innerText =
+        "WHT Eff: " + (whtEff * 100).toFixed(1) + "%";
+      document.getElementById("vatOtherEffLabel").innerText =
+        "VAT Eff: " +
+        (vatEff * 100).toFixed(1) +
+        "%, Local Eff: " +
+        (otherEff * 100).toFixed(1) +
+        "%";
+
+      const diffAbs = Math.abs(netDiff);
+      const diffRatio =
+        netRevenueRequired > 0 ? diffAbs / netRevenueRequired : NaN;
+      const diffLabel =
+        isNaN(diffRatio) || diffRatio < 0.0001
+          ? "OK (≈ Net Revenue Required)"
+          : "차이: " +
+            formatNumber(netDiff, currency, unitFactor) +
+            " (Net Revenue와 미세 차이)";
+      document.getElementById("netCheck").innerText = diffLabel;
+
+      document.getElementById("opexMargin").innerText =
+        "세후 Operating Margin: " + formatPercent(actualOpexMargin);
+
+      // 상세 수식 설명
+      const formulaDetailEl = document.getElementById("formulaDetail");
+      formulaDetailEl.innerHTML =
+        "예시 기준으로<br>" +
+        "• Cost Base = " +
+        formatNumber(directCost, currency, unitFactor) +
+        " (Direct) + " +
+        formatNumber(reimbCost, currency, unitFactor) +
+        " (Reimb) + " +
+        formatNumber(overheadAmount, currency, unitFactor) +
+        " (Overhead) + " +
+        formatNumber(contingencyAmount, currency, unitFactor) +
+        " (Contingency) = <strong>" +
+        formatNumber(costBase, currency, unitFactor) +
+        "</strong><br>" +
+        "• Net Revenue Required = Cost Base + Profit(" +
+        formatPercent(profitPct) +
+        ") = <strong>" +
+        formatNumber(netRevenueRequired, currency, unitFactor) +
+        "</strong><br>" +
+        "• Total Tax Rate = WHT(" +
+        (whtEff * 100).toFixed(1) +
+        "%) + VAT(" +
+        (vatEff * 100).toFixed(1) +
+        "%) + Local(" +
+        (otherEff * 100).toFixed(1) +
+        "%) = <strong>" +
+        (totalTaxRate * 100).toFixed(1) +
+        "%</strong><br>" +
+        "• 따라서 Contract Price = " +
+        formatNumber(netRevenueRequired, currency, unitFactor) +
+        " ÷ (1 − " +
+        (totalTaxRate * 100).toFixed(1) +
+        "%) ≈ <strong>" +
+        formatNumber(contractPrice, currency, unitFactor) +
+        "</strong>";
+    }
+
+    function resetSample() {
+      document.getElementById("country").value = "Philippines";
+      document.getElementById("structure").value = "NRFC";
+      document.getElementById("currency").value = "USD";
+      document.getElementById("fxRate").value = 56;
+      document.getElementById("unit").value = 1;
+
+      document.getElementById("directCost").value = 1000000;
+      document.getElementById("reimbCost").value = 200000;
+      document.getElementById("overheadPct").value = 80;
+      document.getElementById("contingencyPct").value = 10;
+      document.getElementById("profitPct").value = 15;
+
+      applyPresetFromSelection();
+      document.getElementById("errorMsg").textContent = "";
+      calculate();
+    }
+
+    document.getElementById("calcBtn").addEventListener("click", calculate);
+    document.getElementById("resetBtn").addEventListener("click", resetSample);
+
+    document.getElementById("currency").addEventListener("change", calculate);
+    document.getElementById("unit").addEventListener("change", calculate);
+
+    document.getElementById("country").addEventListener("change", () => {
+      applyPresetFromSelection();
+      calculate();
+    });
+    document.getElementById("structure").addEventListener("change", () => {
+      applyPresetFromSelection();
+      calculate();
+    });
+
+    // 초기 로드: Philippines NRFC Preset + 계산
+    window.addEventListener("DOMContentLoaded", () => {
+      applyPresetFromSelection();
+      calculate();
+    });
+  </script>
+</body>
+</html>
